@@ -32,20 +32,33 @@ from picamera.array import PiRGBArray
 
 
 #2.Declarations
-
+#initialisation camera duh!!!
 camera=picamera.PiCamera() #camera is camera,not to be changed!
 time.sleep(2)
-
 exec(open("/home/pi/plausi_check/settings/camera_settings.txt"))
-
+#configuration inistialisation
 Config=ConfigParser.ConfigParser()
 Config.read("../settings/settings.ini")
-
+#serial peri peri interface insitialisation,might go away after lichtschrank is tested!
 spi = spidev.SpiDev()
 spi.open(0,0)
 
 logging.basicConfig(filename='../logs/plausicheck.log',filemode='w',level=logging.DEBUG)
 
+#all the base moved here against the war on global variables was lost
+parser=argparse.ArgumentParser()
+#the thing about argparse is that it is extremely easy and difficult at the same time!!
+parser.add_argument('-i','--image',dest="filename",help='*insert your mama joke',metavar="FILE")
+parser.add_argument('-k','--key',type=str,help='Select key to trigger script trigger')
+parser.add_argument('-c','--contrast',type=int,help='adjust contrast on connected image capturing device,lovingly known as a camera')
+parser.add_argument('-br','--brightness',type=int,help='na na na na na na ')
+parser.add_argument('-sh','--shutterspeed',type=int,help=' speed of shutting up')
+parser.add_argument('-iso','--ISO',type=int,help='international standards organisation,jk :P')
+parser.add_argument('-res','--resolution',type=int,help='like New Years')
+parser.add_argument('-set','--setup',required=False,help='unpossible',action="store_true")
+#parser.add_argument('-e1','--image',required=False,help='*insert your mama joke',action="store_true")
+#parser.add_argument('-e2','--image',required=False,help='*insert your mama joke',action="store_true")
+args=parser.parse_args() 
 PingRate=Config.getfloat("Delay","PingRate")
 beltWidth=Config.getfloat("Belt","Width")##
 minParcelWidth=Config.getfloat("Sensor","PacketWidth")#According to Holger's Table
@@ -120,9 +133,10 @@ class irThread(Thread):
         print "Starting " + self.name
         while True:
 			try:
-				char = getch.getch()
-				print char
-				if (self.detector.detectParcel() or char == "s"): #or keypress
+				if args.key:
+					char = getch.getch()
+				#print char
+				if (self.detector.detectParcel() or char == keyPress): #or keypress
 					event.set()														
 				time.sleep(PingRate)
 				char = ""
@@ -343,12 +357,39 @@ def captureDetectSequence():
 		logging.info(exc)
 	threadflag1=False		
 	
+def argumentParsing():	
 	
+	
+	if args.filename!=None:
+		im=cv2.imread(args.filename)
+		scan(im)
+		#print im.size
+		#cv2.imshow("image",im)#i think it does display		
+		#cv2.waitKey(0)
+	if args.key:
+		keyPress=args.key
+		print keyPress+' is the selected key for simulating object detection'
+		#print 'key'
+	if args.contrast:
+		camera.contrast=args.contrast
+		print args.contrast
+		print 'contrast'
+	if args.brightness:
+		camera.brightness=args.brightness
+		print 'my eyes,my eyes'
+	if args.ISO:
+		print 'ISO'
+	if args.setup:
+		print 'setup'
+	if args.shutterspeed:
+		print 'wut?'	
+	#sys.exit()	
 	
 #6.Main	
 #pseudo
 if __name__=='__main__':	
-	try:		
+	try:
+		argumentParsing()
 		event = threading.Event()
 		threadIR=irThread(1,'Distance Sensor Thread', event)	
 		threadIR.start()
